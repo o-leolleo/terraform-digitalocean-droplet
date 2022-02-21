@@ -16,11 +16,6 @@ variable "passwd" {
   default = "$6$rounds=4096$i0Fj2b1bir$exch.dAJADlVgwZ9VyBBx2Pm1n52ew75Im4f5CXqcYCFlELQVUOmKHJ/aVlGEUvJQPxWqzOfsoX.LrF0xSEVG/"
 }
 
-locals {
-  public_key   = file("./files/testing.pub")
-  test_content = file("./files/test-content.txt")
-}
-
 resource "digitalocean_ssh_key" "testing" {
   name       = "DigitalOcean Droplet Default Example"
   public_key = local.public_key
@@ -34,7 +29,7 @@ module "droplet" {
   ]
 
   name          = "droplet"
-  image         = "ubuntu-21-04-x64"
+  image         = "ubuntu-21-10-x64"
   droplet_agent = true
 
   ssh_port              = 8008
@@ -67,12 +62,39 @@ module "droplet" {
     ]
 
     runcmd = [
-      "echo 'Hello world' > /tmp/test.txt"
+      "mkdir /tmp/hello",
+      "echo 'Hello world' > /tmp/hello/test.txt",
+      "python3 -m http.server -d /tmp/hello"
     ]
   }
 }
 
+resource "digitalocean_firewall" "web_traffic" {
+  name = "web-traffic"
+
+  droplet_ids = [module.droplet.info.id]
+
+  inbound_rule {
+    protocol         = local.tcp_protocol
+    port_range       = local.http_port
+    source_addresses = local.any_ip
+  }
+
+  inbound_rule {
+    protocol         = local.icmp_protocol
+    source_addresses = local.any_ip
+  }
+}
+
+locals {
+  tcp_protocol  = "tcp"
+  icmp_protocol = "icmp"
+  http_port     = "80"
+  any_ip        = ["0.0.0.0/0", "::/0"]
+  public_key    = file("./files/testing.pub")
+  test_content  = file("./files/test-content.txt")
+}
 
 output "info" {
-  value = module.mongodb.info
+  value = module.droplet.info
 }
