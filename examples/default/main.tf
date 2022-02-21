@@ -26,14 +26,14 @@ resource "digitalocean_ssh_key" "testing" {
   public_key = local.public_key
 }
 
-module "mongodb" {
+module "droplet" {
   source = "../.."
 
   depends_on = [
     digitalocean_ssh_key.testing
   ]
 
-  name          = "mongodb"
+  name          = "droplet"
   image         = "ubuntu-21-04-x64"
   droplet_agent = true
 
