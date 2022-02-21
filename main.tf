@@ -20,7 +20,7 @@ resource "digitalocean_droplet" "this" {
   droplet_agent = var.droplet_agent
 
   ssh_keys = [
-    digitalocean_ssh_key.stub.id,
+    data.digitalocean_ssh_key.stub.id,
   ]
 
   user_data = join("\n", [
@@ -37,14 +37,13 @@ resource "digitalocean_droplet" "this" {
   ])
 }
 
+data "digitalocean_ssh_key" "stub" {
+  name = var.stub_key_name
+}
+
 locals {
   user_data = templatefile("${path.module}/templates/sshd_config", {
     ssh_port              = var.ssh_port
     ssh_permit_root_login = var.ssh_permit_root_login
   })
-}
-
-resource "digitalocean_ssh_key" "stub" {
-  name       = "Stub key"
-  public_key = file("${path.module}/files/stub.pub")
 }

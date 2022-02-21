@@ -64,7 +64,7 @@ module "droplet" {
     runcmd = [
       "mkdir /tmp/hello",
       "echo 'Hello world' > /tmp/hello/test.txt",
-      "python3 -m http.server -d /tmp/hello"
+      "python3 -m http.server -d /tmp/hello ${local.server_port}"
     ]
   }
 }
@@ -76,7 +76,13 @@ resource "digitalocean_firewall" "web_traffic" {
 
   inbound_rule {
     protocol         = local.tcp_protocol
-    port_range       = local.http_port
+    port_range       = local.server_port
+    source_addresses = local.any_ip
+  }
+
+  inbound_rule {
+    protocol         = local.tcp_protocol
+    port_range       = local.ssh_port
     source_addresses = local.any_ip
   }
 
@@ -84,12 +90,20 @@ resource "digitalocean_firewall" "web_traffic" {
     protocol         = local.icmp_protocol
     source_addresses = local.any_ip
   }
+
+  outbound_rule {
+    protocol              = local.tcp_protocol
+    port_range            = local.all_ports
+    destination_addresses = local.any_ip
+  }
 }
 
 locals {
   tcp_protocol  = "tcp"
   icmp_protocol = "icmp"
-  http_port     = "80"
+  server_port   = "8000"
+  ssh_port      = "8008"
+  all_ports     = "1-65535"
   any_ip        = ["0.0.0.0/0", "::/0"]
   public_key    = file("./files/testing.pub")
   test_content  = file("./files/test-content.txt")
